@@ -10,6 +10,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ProfileScreen from "./screens/ProfileScreen";
 import VerifyOtp from "./screens/VerifyOtp";
+import ResetPassworScreen from "./screens/ForgotPasswordScreen";
+import NewPasswordScreen from "./screens/NewpasswordScreen";
 
 function App() {
   return (
@@ -24,6 +26,10 @@ function App() {
               <Route path='register/' element={<RegisterScreen />} />
               <Route path='profile/' element={<ProfileScreen />} />
               <Route path='verify-otp/:userId' element={<VerifyOtp />} />
+              <Route path='/reset-password' element={<ResetPassworScreen/>} />
+              <Route path="/new-password" element= {<NewPasswordScreen />} />
+
+
 
             </Routes>
           </Container>

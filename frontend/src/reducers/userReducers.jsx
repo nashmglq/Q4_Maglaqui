@@ -11,7 +11,13 @@ import {
   USER_VERIFY_OTP_FAIL,
   USER_RESEND_OTP_REQUEST,
   USER_RESEND_OTP_SUCCESS,
-  USER_RESEND_OTP_FAIL
+  USER_RESEND_OTP_FAIL,
+  USER_SEND_PASSWORD_REQUEST,
+  USER_SEND_PASSWORD_SUCCESS,
+  USER_SEND_PASSWORD_FAIL,
+  USER_NEW_PASSWORD_REQUEST,
+  USER_NEW_PASSWORD_SUCCESS,
+  USER_NEW_PASSWORD_FAIL, 
 } from "../constants/userConstants";
 
 export const userLoginReducer = (state = {}, action) => {
@@ -66,6 +72,39 @@ export const userResendOtpReducer = (state = {}, action) => {
       return { loading: false, userInfo: action.payload };
     case USER_RESEND_OTP_FAIL:
       return { loading: false, error: action.payload };
+    default:
+      return state;
+  }
+};
+
+
+export const userSendPasswordReducer = (state = {}, action) => {
+  switch (action.type) {
+    case USER_SEND_PASSWORD_REQUEST:
+      return { loading: true };
+
+    case USER_SEND_PASSWORD_SUCCESS:
+      return { loading: false, userInfo: action.payload };
+
+    case USER_SEND_PASSWORD_FAIL:
+      return { loading: false, error: action.payload };
+
+    default:
+      return state;
+  }
+};
+
+export const userNewPasswordReducer = (state = {}, action) => {
+  switch (action.type) {
+    case USER_NEW_PASSWORD_REQUEST:
+      return { loading: true };
+
+    case USER_NEW_PASSWORD_SUCCESS:
+      return { loading: false, userInfo: action.payload };
+
+    case USER_NEW_PASSWORD_FAIL:
+      return { loading: false, error: action.payload };
+
     default:
       return state;
   }

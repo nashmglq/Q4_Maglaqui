@@ -1,3 +1,4 @@
+import axios from "axios";
 import {
   USER_LOGIN_REQUEST,
   USER_LOGIN_SUCCESS,
@@ -11,15 +12,24 @@ import {
   USER_VERIFY_OTP_FAIL,
   USER_RESEND_OTP_REQUEST,
   USER_RESEND_OTP_SUCCESS,
-  USER_RESEND_OTP_FAIL
+  USER_RESEND_OTP_FAIL,
+  USER_SEND_PASSWORD_REQUEST,
+  USER_SEND_PASSWORD_SUCCESS,
+  USER_SEND_PASSWORD_FAIL,
+  USER_NEW_PASSWORD_REQUEST,
+  USER_NEW_PASSWORD_SUCCESS,
+  USER_NEW_PASSWORD_FAIL,
 } from "../constants/userConstants";
-import axios from "axios";
+
+const instance = axios.create({
+  baseURL: 'http://127.0.0.1:8000',
+});
+
+
 
 export const login = (email, password) => async (dispatch) => {
   try {
-    dispatch({
-      type: USER_LOGIN_REQUEST,
-    });
+    dispatch({ type: USER_LOGIN_REQUEST });
     const config = {
       headers: {
         "Content-Type": "application/json",
@@ -55,9 +65,7 @@ export const logout = () => async (dispatch) => {
 
 export const register = (username, email, password) => async (dispatch) => {
   try {
-    dispatch({
-      type: USER_REGISTER_REQUEST,
-    });
+    dispatch({ type: USER_REGISTER_REQUEST });
 
     const config = {
       headers: {
@@ -67,21 +75,16 @@ export const register = (username, email, password) => async (dispatch) => {
 
     const { data } = await axios.post(
       "/api/register/",
-      { username, email, password }, 
+      { username, email, password },
       config
     );
 
     dispatch({
       type: USER_REGISTER_SUCCESS,
-      payload: data, // Return the response data from the API call
-    });
-
-    dispatch({
-      type: USER_LOGIN_SUCCESS,
       payload: data,
     });
 
-    return data; // Return the response data
+    return data;
   } catch (error) {
     dispatch({
       type: USER_REGISTER_FAIL,
@@ -97,9 +100,7 @@ export const register = (username, email, password) => async (dispatch) => {
 
 export const verifyOTP = (userId, otp) => async (dispatch) => {
   try {
-    dispatch({
-      type: USER_VERIFY_OTP_REQUEST,
-    });
+    dispatch({ type: USER_VERIFY_OTP_REQUEST });
 
     const config = {
       headers: {
@@ -130,12 +131,9 @@ export const verifyOTP = (userId, otp) => async (dispatch) => {
   }
 };
 
-
 export const resendOTP = (userId) => async (dispatch) => {
   try {
-    dispatch({
-      type: USER_RESEND_OTP_REQUEST,
-    });
+    dispatch({ type: USER_RESEND_OTP_REQUEST });
 
     const config = {
       headers: {
@@ -153,9 +151,8 @@ export const resendOTP = (userId) => async (dispatch) => {
       type: USER_RESEND_OTP_SUCCESS,
       payload: data,
     });
-
   } catch (error) {
-    console.log("Error occurred during resendOTP:", error); // Add this line
+    console.log("Error occurred during resendOTP:", error);
     dispatch({
       type: USER_RESEND_OTP_FAIL,
       payload:
@@ -163,5 +160,67 @@ export const resendOTP = (userId) => async (dispatch) => {
           ? error.response.data.detail
           : error.message,
     });
+  }
+};
+
+export const sendPasswordRequest = (email) => async (dispatch) => {
+  try {
+    dispatch({ type: USER_SEND_PASSWORD_REQUEST });
+
+    const response = await axios.post("/api/request-reset-email/", {
+      email: email,
+      redirect_url: "http://localhost:5173/new-password/",
+    });
+
+    dispatch({
+      type: USER_SEND_PASSWORD_SUCCESS,
+      payload: response.data.success,
+    });
+  } catch (error) {
+    const errorMessage =
+      error.response && error.response.data.error
+        ? error.response.data.error
+        : "Unable to send password reset request";
+    dispatch({
+      type: USER_SEND_PASSWORD_FAIL,
+      payload: errorMessage,
+    });
+
+    console.error("Error sending password reset request:", error);
+  }
+};
+
+export const userNewPasswordSuccess = (data) => ({
+  type: USER_NEW_PASSWORD_SUCCESS,
+  payload: data,
+});
+
+export const userNewPasswordFail = (error) => ({
+  type: USER_NEW_PASSWORD_FAIL,
+  payload: error,
+});
+
+export const userNewPassword = (uidb64, token, password, password2) => async (
+  dispatch
+) => {
+  try {
+    dispatch({ type: USER_NEW_PASSWORD_REQUEST });
+
+    const config = {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    };
+
+    const { data } = await instance.patch(
+      "api/password-reset-complete/",
+      { uidb64, token, password, password2 },
+      config
+    );
+
+    dispatch(userNewPasswordSuccess(data));
+  } catch (error) {
+    dispatch(userNewPasswordFail(error.message));
+    throw error;
   }
 };
