@@ -12,6 +12,7 @@ import ProfileScreen from "./screens/ProfileScreen";
 import VerifyOtp from "./screens/VerifyOtp";
 import ResetPassworScreen from "./screens/ForgotPasswordScreen";
 import NewPasswordScreen from "./screens/NewpasswordScreen";
+import ChangePassword from "./screens/ChangePassword";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path='verify-otp/:userId' element={<VerifyOtp />} />
               <Route path='/reset-password' element={<ResetPassworScreen/>} />
               <Route path="/new-password" element= {<NewPasswordScreen />} />
+              <Route path="/change-password" element = {<ChangePassword/>} />
 
 
 

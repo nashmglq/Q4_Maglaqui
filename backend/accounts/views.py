@@ -22,7 +22,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnicodeDecodeError
 from django.urls import reverse
 from .utils import *
-
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -149,7 +150,7 @@ class RequestPasswordResetEmail(generics.GenericAPIView):
             Util.send_email(data)
             return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
         else:
-            # If the email is not found, return an error response
+            
             return Response({'error': 'No user found with this email address'}, status=status.HTTP_404_NOT_FOUND)
         
 class PasswordTokenCheckAPI(generics.GenericAPIView):
@@ -193,3 +194,24 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         return Response({'success': True, 'message': 'Password reset success'}, status=status.HTTP_200_OK)
+
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    serializer = ChangePasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        user = request.user
+        old_password = serializer.data.get("old_password")
+        new_password = serializer.data.get("new_password")
+        
+        # Check if the old password is correct
+        if not user.check_password(old_password):
+            return Response({"error": "Old password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Set the new password and save the user
+        user.set_password(new_password)
+        user.save()
+        return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

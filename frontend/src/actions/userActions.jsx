@@ -19,13 +19,14 @@ import {
   USER_NEW_PASSWORD_REQUEST,
   USER_NEW_PASSWORD_SUCCESS,
   USER_NEW_PASSWORD_FAIL,
+  USER_CHANGE_PASSWORD_REQUEST,
+  USER_CHANGE_PASSWORD_SUCCESS,
+  USER_CHANGE_PASSWORD_FAIL,
 } from "../constants/userConstants";
 
 const instance = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: "http://127.0.0.1:8000",
 });
-
-
 
 export const login = (email, password) => async (dispatch) => {
   try {
@@ -200,27 +201,60 @@ export const userNewPasswordFail = (error) => ({
   payload: error,
 });
 
-export const userNewPassword = (uidb64, token, password, password2) => async (
-  dispatch
-) => {
-  try {
-    dispatch({ type: USER_NEW_PASSWORD_REQUEST });
+export const userNewPassword =
+  (uidb64, token, password, password2) => async (dispatch) => {
+    try {
+      dispatch({ type: USER_NEW_PASSWORD_REQUEST });
 
-    const config = {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      };
 
-    const { data } = await instance.patch(
-      "api/password-reset-complete/",
-      { uidb64, token, password, password2 },
-      config
-    );
+      const { data } = await instance.patch(
+        "api/password-reset-complete/",
+        { uidb64, token, password, password2 },
+        config
+      );
 
-    dispatch(userNewPasswordSuccess(data));
-  } catch (error) {
-    dispatch(userNewPasswordFail(error.message));
-    throw error;
-  }
-};
+      dispatch(userNewPasswordSuccess(data));
+    } catch (error) {
+      dispatch(userNewPasswordFail(error.message));
+      throw error;
+    }
+  };
+
+  export const changePassword = (oldPassword, newPassword) => async (dispatch) => {
+    try {
+      dispatch({ type: USER_CHANGE_PASSWORD_REQUEST });
+  
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const accessToken = userInfo ? (userInfo.access || userInfo.token) : null;
+  
+      console.log("Access token:", accessToken); // Print access token to console
+  
+      if (!accessToken) {
+        throw new Error('Access token not found');
+      }
+  
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+      };
+  
+      const { data } = await instance.patch(
+        "/api/change-password/",
+        { old_password: oldPassword, new_password: newPassword },
+        config
+      );
+  
+      dispatch({ type: USER_CHANGE_PASSWORD_SUCCESS, payload: data });
+    } catch (error) {
+      dispatch({ type: USER_CHANGE_PASSWORD_FAIL, payload: error.message });
+      throw error;
+    }
+  };

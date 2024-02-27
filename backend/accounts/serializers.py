@@ -75,3 +75,8 @@ class SetNewPasswordSerializer(serializers.Serializer):
             raise AuthenticationFailed('Invalid user', code='invalid_user')
         except Exception as e:
             raise AuthenticationFailed('Error resetting password', code='reset_failed')
+        
+        
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
