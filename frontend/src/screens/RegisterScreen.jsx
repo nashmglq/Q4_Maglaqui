@@ -283,7 +283,7 @@ function RegisterScreen() {
               <Grid item>
                 <Typography
                   component={Link}
-                  to={"/auth/login"}
+                  to={"/login"}
                   sx={{ color: "white" }}
                 >
                   {"Already have an account? Sign in."}

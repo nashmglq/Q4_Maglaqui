@@ -6,6 +6,15 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework import serializers
+from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
+from rest_framework.exceptions import AuthenticationFailed
+
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -47,8 +56,25 @@ class UserSerializerWithToken(UserSerializer):
         return str(token.access_token)
 
 class ResetPasswordEmailRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField(min_length=2)
+    username_or_email = serializers.CharField(min_length=2)  # Change to accept username or email
     redirect_url = serializers.CharField(max_length=500, required=False)
+
+    def validate_username_or_email(self, value):
+        """
+        Validate that the input is either a valid username or email.
+        """
+        user_model = get_user_model()
+        try:
+            # Check if the value is an email
+            validate_email(value)
+            return value
+        except ValidationError:
+            # Check if the value is a valid username
+            if user_model.objects.filter(username=value).exists():
+                return value
+            else:
+                raise serializers.ValidationError("No user found with this username or email address.")
+
 
 class SetNewPasswordSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=6, max_length=68, write_only=True)

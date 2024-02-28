@@ -164,12 +164,12 @@ export const resendOTP = (userId) => async (dispatch) => {
   }
 };
 
-export const sendPasswordRequest = (email) => async (dispatch) => {
+export const sendPasswordRequest = (usernameOrEmail) => async (dispatch) => {
   try {
     dispatch({ type: USER_SEND_PASSWORD_REQUEST });
 
     const response = await axios.post("/api/request-reset-email/", {
-      email: email,
+      username_or_email: usernameOrEmail, // Change to send username_or_email
       redirect_url: "http://localhost:5173/new-password/",
     });
 
@@ -190,6 +190,7 @@ export const sendPasswordRequest = (email) => async (dispatch) => {
     console.error("Error sending password reset request:", error);
   }
 };
+
 
 export const userNewPasswordSuccess = (data) => ({
   type: USER_NEW_PASSWORD_SUCCESS,

@@ -32,21 +32,57 @@ function ChangePassword() {
   return (
     <div>
       <h2>Change Password</h2>
-      {error && <div style={{ color: 'red' }}>{error}</div>}
+      {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
       <form onSubmit={handleSubmit}>
-        <div>
+        <div style={{ marginBottom: '15px' }}>
           <label>Old Password:</label>
-          <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} required />
+          <input 
+            type="password" 
+            value={oldPassword} 
+            onChange={(e) => setOldPassword(e.target.value)} 
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              border: '1px solid #ccc', 
+              borderRadius: '5px',
+              color: 'black' // Setting text color to black
+            }} 
+            required 
+          />
         </div>
-        <div>
+        <div style={{ marginBottom: '15px' }}>
           <label>New Password:</label>
-          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+          <input 
+            type="password" 
+            value={newPassword} 
+            onChange={(e) => setNewPassword(e.target.value)} 
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              border: '1px solid #ccc', 
+              borderRadius: '5px',
+              color: 'black' // Setting text color to black
+            }} 
+            required 
+          />
         </div>
-        <div>
+        <div style={{ marginBottom: '15px' }}>
           <label>Confirm Password:</label>
-          <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+          <input 
+            type="password" 
+            value={confirmPassword} 
+            onChange={(e) => setConfirmPassword(e.target.value)} 
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              border: '1px solid #ccc', 
+              borderRadius: '5px',
+              color: 'black' // Setting text color to black
+            }} 
+            required 
+          />
         </div>
-        <button type="submit">Change Password</button>
+        <button type="submit" style={{ padding: '10px', borderRadius: '5px', backgroundColor: '#007bff', color: '#fff', border: 'none' }}>Change Password</button>
       </form>
     </div>
   );

@@ -24,6 +24,9 @@ from django.urls import reverse
 from .utils import *
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from datetime import datetime, timedelta
+from django.utils import timezone
+from django.db.models import Q  
 
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -43,6 +46,37 @@ def registerUser(request):
     data = request.data
     print("Received data:", data)
     try:
+        # Check if user with the given email or username already exists
+        existing_user = User.objects.filter(Q(username=data.get('username')) | Q(email=data.get('email'))).first()
+        if existing_user:
+            if existing_user.is_active:
+                return Response({'detail': 'User with this email or username already exists and is active. No OTP will be sent.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # User exists but is not active, so update the user's password and send OTP again
+                existing_user.set_password(data.get('password'))
+                existing_user.is_active = False
+                existing_user.save()
+
+                profile = Profile.objects.get(user=existing_user)
+                otp = generate_otp()
+                profile.otp = otp
+                profile.last_otp_sent = timezone.now()  # Update last OTP sent time
+                profile.save()
+                
+                send_mail(
+                    'OTP Verification',
+                    f'Your OTP is: {otp}',
+                    'your_email@example.com',
+                    [data.get('email')],
+                    fail_silently=False,
+                )
+
+                serializer = UserSerializerWithToken(existing_user, many=False)
+                response_data = serializer.data
+                response_data['userId'] = existing_user.id  # Include userId in the response
+                return Response(response_data)
+
+        # If the user does not exist, create a new user
         user = User.objects.create(
             username=data.get('username'),
             email=data.get('email'),
@@ -66,8 +100,9 @@ def registerUser(request):
         return Response(response_data)
     except Exception as e:
         print("Exception:", e)
-        message = {'detail': 'User with this email already exists'}
+        message = {'detail': 'Error occurred while registering user'}
         return Response(message, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['POST'])
@@ -78,6 +113,10 @@ def verifyOTP(request):
     
     try:    
         user = User.objects.get(id=user_id)
+        # Check if the user is already active
+        if user.is_active:
+            return Response({'detail': 'User is already active'}, status=status.HTTP_200_OK)
+        
         profile = Profile.objects.get(user=user)
         if profile.otp == otp_entered:
             user.is_active = True
@@ -99,10 +138,22 @@ def resendOTP(request):
     
     try:
         user = User.objects.get(id=user_id)
+        
+
+        if user.is_active:
+            return Response({'detail': 'User is already active. No OTP will be sent.'}, status=status.HTTP_400_BAD_REQUEST)
+        
         profile = Profile.objects.get(user=user)
+        
+        if profile.last_otp_sent and timezone.now() - profile.last_otp_sent < timedelta(seconds=10):
+            time_difference = timezone.now() - profile.last_otp_sent
+            time_remaining = 10 - time_difference.total_seconds()
+            print(f"User {user.username} tried to resend OTP before 300 seconds. Time remaining: {time_remaining} seconds.")
+            return Response({'detail': f'You can request a new OTP in {int(time_remaining)} seconds'}, status=status.HTTP_400_BAD_REQUEST)
         
         otp = generate_otp()
         profile.otp = otp
+        profile.last_otp_sent = timezone.now()  # Update last OTP sent time
         profile.save()
         
         send_mail(
@@ -120,9 +171,8 @@ def resendOTP(request):
         return Response({'detail': 'Profile not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
-
-
-
+    
+    
 class CustomRedirect(HttpResponsePermanentRedirect):
 
     allowed_schemes = [settings.APP_SCHEME, 'http', 'https']
@@ -133,12 +183,15 @@ class RequestPasswordResetEmail(generics.GenericAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        email = request.data.get('email', '')
-
+        username_or_email = request.data.get('username_or_email', '')  # Change to accept username or email
         User = get_user_model()  
 
-        if User.objects.filter(email=email).exists():
-            user = User.objects.get(email=email)
+        try:
+            if '@' in username_or_email:  # Check if the input is an email
+                user = User.objects.get(email=username_or_email)
+            else:  # Assume it's a username
+                user = User.objects.get(username=username_or_email)
+
             uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
             current_site = get_current_site(request=request).domain
@@ -149,9 +202,8 @@ class RequestPasswordResetEmail(generics.GenericAPIView):
             data = {'email_body': email_body, 'to_email': user.email, 'email_subject': 'Reset your password'}
             Util.send_email(data)
             return Response({'success': 'We have sent you a link to reset your password'}, status=status.HTTP_200_OK)
-        else:
-            
-            return Response({'error': 'No user found with this email address'}, status=status.HTTP_404_NOT_FOUND)
+        except User.DoesNotExist:
+            return Response({'error': 'No user found with this username or email address'}, status=status.HTTP_404_NOT_FOUND)
         
 class PasswordTokenCheckAPI(generics.GenericAPIView):
     permission_classes = [AllowAny]
@@ -203,12 +255,16 @@ def change_password(request):
     serializer = ChangePasswordSerializer(data=request.data)
     if serializer.is_valid():
         user = request.user
-        old_password = serializer.data.get("old_password")
-        new_password = serializer.data.get("new_password")
+        old_password = serializer.validated_data.get("old_password")
+        new_password = serializer.validated_data.get("new_password")
         
         # Check if the old password is correct
-        if not user.check_password(old_password):
+        if not user.check_password(old_password):   
             return Response({"error": "Old password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if old and new passwords are different
+        if old_password == new_password:
+            return Response({"error": "New password must be different from old password"}, status=status.HTTP_400_BAD_REQUEST)
         
         # Set the new password and save the user
         user.set_password(new_password)

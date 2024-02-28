@@ -45,6 +45,22 @@ function NewPasswordScreen() {
     }
   }, [newPasswordState, navigate]);
 
+  const inputStyle = {
+    width: "100%",
+    padding: "10px",
+    border: "none",
+    borderBottom: "1px solid #ccc",
+    fontSize: "16px",
+    color: "black", // Set password color to black
+  };
+
+  const containerStyle = {
+    marginBottom: "20px",
+    border: "1px solid #ccc",
+    borderRadius: "5px",
+    padding: "10px",
+  };
+
   const handleResetPassword = async (e) => {
     e.preventDefault();
 
@@ -61,7 +77,7 @@ function NewPasswordScreen() {
     setLoading(true);
 
     try {
-      await dispatch(userNewPassword(uidb64, token, password, confirmPassword)); // Dispatch userNewPassword instead of userNewPasswordReducer
+      await dispatch(userNewPassword(uidb64, token, password, confirmPassword));
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -73,7 +89,7 @@ function NewPasswordScreen() {
     <div>
       <h2>New Password</h2>
       <form onSubmit={handleResetPassword}>
-        <div>
+        <div style={containerStyle}>
           <label htmlFor="password">New Password:</label>
           <input
             type="password"
@@ -81,9 +97,10 @@ function NewPasswordScreen() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            style={inputStyle}
           />
         </div>
-        <div>
+        <div style={containerStyle}>
           <label htmlFor="confirmPassword">Confirm Password:</label>
           <input
             type="password"
@@ -91,6 +108,7 @@ function NewPasswordScreen() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            style={inputStyle}
           />
         </div>
         <button type="submit" disabled={loading}>
